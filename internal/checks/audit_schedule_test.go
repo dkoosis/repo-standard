@@ -117,3 +117,28 @@ func TestAuditSchedule_OwnWorkflowMatchesScaffold(t *testing.T) {
 		t.Error("repo-standard's audit.yml differs from the scaffold's")
 	}
 }
+
+// The skip-unchanged workflow gates make audit on a step output, not on the
+// event, so the schedule reaches it.
+func TestAuditSchedule_GatedByStepOutputPasses(t *testing.T) {
+	t.Parallel()
+	const gated = `name: audit
+on:
+  schedule:
+    - cron: '41 7 * * *'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - id: gate
+        run: echo "full=true" >> "$GITHUB_OUTPUT"
+      - if: steps.gate.outputs.full == 'true'
+        run: make audit
+      - if: steps.gate.outputs.full != 'true'
+        run: make vuln
+`
+	dir := writeRepo(t, map[string]string{".github/workflows/audit.yml": gated})
+	if got := checks.CheckCIAuditSchedule(dir); len(got) != 0 {
+		t.Errorf("gated audit workflow should pass: %v", got)
+	}
+}
