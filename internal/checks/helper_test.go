@@ -71,10 +71,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: golangci-lint (pinned in .sandbox/project.conf)
-        run: |
-          . ./.sandbox/project.conf
-          install-golangci "$GOLANGCI_LINT_VERSION"
+      - name: golangci-lint (latest release)
+        run: install-golangci
       - name: check
         if: needs.detect.outputs.run_check == 'true'
         run: make check
@@ -105,7 +103,6 @@ jobs:
 `
 
 const goodProjectConf = `PROJECT_NAME=x
-GOLANGCI_LINT_VERSION=v2.14.0
 `
 
 const goodValues = `{"profile": "tool", "exceptions": []}` + "\n"

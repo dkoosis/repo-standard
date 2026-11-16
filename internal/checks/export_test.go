@@ -13,7 +13,6 @@ var (
 	CheckFuzzCoverage    = checkFuzzCoverage
 	CheckGateSteps       = checkGateSteps
 	CheckLintFloor       = checkLintFloor
-	CheckLintPin         = checkLintPin
 	CheckLintPack        = checkLintPack
 	CheckLintSet         = checkLintSet
 	CheckCIGate          = checkCIGate

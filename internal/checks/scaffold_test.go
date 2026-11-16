@@ -17,7 +17,6 @@ func testSpec() ScaffoldSpec {
 		Module:  "github.com/dkoosis/widget",
 		Prefix:  "wg",
 		PlanDir: "~/Projects/dk/Project/widget/plans",
-		LintPin: "v2.1.0",
 		Profile: values.ProfileTool,
 	}
 }
@@ -201,9 +200,6 @@ func TestScaffoldSpecDefaults(t *testing.T) {
 	}
 	if !strings.HasSuffix(spec.PlanDir, "/widget/plans") {
 		t.Errorf("PlanDir = %q", spec.PlanDir)
-	}
-	if spec.LintPin == "" {
-		t.Error("LintPin empty — the pin rule has nothing to read")
 	}
 }
 

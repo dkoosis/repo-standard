@@ -126,7 +126,7 @@ func fixAuditWorkflow(dir string) (string, error) {
 // renderAuditWorkflow emits the nightly audit: the check workflow's setup,
 // then make audit, on a cron and on demand.
 func renderAuditWorkflow(ScaffoldSpec) string {
-	return strings.ReplaceAll(auditWorkflowTmpl, "@PIN@", pinFile)
+	return auditWorkflowTmpl
 }
 
 const auditWorkflowTmpl = `name: audit
@@ -160,10 +160,9 @@ jobs:
         with:
           node-version: '22'
 
-      - name: install linter (version pinned in @PIN@)
+      - name: install linter (latest release)
         run: |
-          . ./@PIN@
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@"$GOLANGCI_LINT_VERSION"
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       # Skip the full audit when main has not moved since its last green run;

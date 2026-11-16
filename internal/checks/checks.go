@@ -45,7 +45,6 @@ const (
 	RuleLintContext     = "lint-contextcheck"    // contextcheck must stay demoted
 	RuleLintSet         = values.DropRule        // .golangci.yml enables the canonical linter set at its strict settings
 	RuleLintPack        = "lint-pack"            // .golangci-rules/ is byte-equal to the lintbrush pack repo-standard embeds
-	RuleLintPin         = "lint-pin"             // exactly one golangci-lint pin location
 	RuleCIGate          = "ci-gate"              // CI calls make check; no gate re-implemented in YAML
 	RuleCodexShape      = "codex-workflow"       // codex-review fires on issue_comment, never pull_request
 	RuleRetiredFiles    = "retired-files"        // files folded into repo-standard are gone
@@ -92,7 +91,6 @@ func Run(dir string) []Finding {
 	findings = append(findings, checkLintFloor(dir)...)
 	findings = append(findings, checkLintSet(dir, vals)...)
 	findings = append(findings, checkLintPack(dir)...)
-	findings = append(findings, checkLintPin(dir)...)
 	findings = append(findings, checkCIGate(dir)...)
 	findings = append(findings, checkCIDocsSkip(dir)...)
 	findings = append(findings, checkCIAuditSchedule(dir)...)
