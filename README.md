@@ -120,7 +120,9 @@ gocritic's ruleguard fails to load ("could not import"). The repair is
 `go get -tool github.com/quasilyte/go-ruleguard/dsl@v0.3.23`; `--fix` names it
 beside the pack it writes, and `init` writes the tool line and its go.sum.
 `init` also scaffolds the `standard` target as
-`go run github.com/dkoosis/repo-standard/cmd/repo-standard@$(REPO_STANDARD_VER)`.
+`GOPRIVATE=github.com/dkoosis/repo-standard go run github.com/dkoosis/repo-standard/cmd/repo-standard@main`:
+no version line in any repo, so a merge here reaches every repo on its next run. GOPRIVATE keeps
+the Go proxy and checksum database from serving a stale `main`.
 
 `lint-set` fails a repo whose `.golangci.yml` does not enable each linter below,
 or weakens one of these settings: errcheck's `check-blank: true` (a blank-discarded

@@ -52,7 +52,6 @@ var (
 		{"DEADCODE_VER", "v0.52.0"},
 		{"JSCPD_VER", "5.1.2"},
 		{"OMITEMPTYSCALAR_VER", "v0.4.0"},
-		{"REPO_STANDARD_VER", "v0.4.0"},
 	}
 
 	// toolTargets extend the floor for the tool profile only: a lib has no

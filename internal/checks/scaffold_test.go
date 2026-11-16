@@ -213,13 +213,13 @@ func TestScaffoldStandardRunsThisTool(t *testing.T) {
 		t.Fatalf("scaffolded Makefile has no standard target:\n%s", mk)
 	}
 	lines := strings.SplitN(after, "\n", 3)
-	// The PATH form trips tool-pin in a repo that pins the checker; the scaffold writes the pinned go run form.
-	const want = "\tgo run github.com/dkoosis/repo-standard/cmd/repo-standard@$(REPO_STANDARD_VER)"
+	// Unpinned on purpose: a repo-standard merge reaches every repo with no edit there. GOPRIVATE makes go ask git for main each run.
+	const want = "\tGOPRIVATE=github.com/dkoosis/repo-standard go run github.com/dkoosis/repo-standard/cmd/repo-standard@main"
 	if len(lines) < 2 || lines[1] != want {
 		t.Errorf("standard recipe = %q; want %q", lines[1], want)
 	}
-	if !strings.Contains(mk, "\nREPO_STANDARD_VER := v") {
-		t.Error("scaffolded Makefile does not set REPO_STANDARD_VER")
+	if strings.Contains(mk, "REPO_STANDARD_VER") {
+		t.Error("scaffolded Makefile pins repo-standard; it must run @main")
 	}
 }
 
