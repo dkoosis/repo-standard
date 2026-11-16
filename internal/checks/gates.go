@@ -17,8 +17,11 @@ import (
 //	gate-skip — a step that exits 0 when its tool is missing.
 //	tool-pin  — a tool that runs on PATH, at @latest, or at an unset version.
 //
-// golangci-lint is out of both (lint-pin owns it). A tool not named in
+// golangci-lint is out of both: it runs at whatever release is installed. A tool not named in
 // gateTools is repo-specific and out of the rules.
+
+// pinFile is where a repo sets the versions its gates run at.
+const pinFile = ".sandbox/project.conf"
 
 // gateTools are the tools the rules know by name.
 var gateTools = []string{"govulncheck", "nilaway", "jscpd", "deadcode", "go-arch-lint", "staticcheck", "omitemptyscalar"}

@@ -9,48 +9,6 @@ import (
 	"github.com/dkoosis/repo-standard/internal/checks"
 )
 
-func TestLintPin(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name    string
-		files   map[string]string
-		wantMsg string
-	}{
-		{
-			name: "one pin in project.conf, workflow reads the key",
-			files: map[string]string{
-				".sandbox/project.conf":       goodProjectConf,
-				".github/workflows/check.yml": goodCheckYML,
-			},
-		},
-		{
-			name:    "no pin anywhere",
-			files:   map[string]string{".sandbox/project.conf": "PROJECT_NAME=x\n"},
-			wantMsg: "not pinned",
-		},
-		{
-			name: "second pin hardcoded in the workflow",
-			files: map[string]string{
-				".sandbox/project.conf": goodProjectConf,
-				".github/workflows/check.yml": strings.Replace(goodCheckYML,
-					`install-golangci "$GOLANGCI_LINT_VERSION"`,
-					"install-golangci v2.12.2 # golangci-lint", 1),
-			},
-			wantMsg: "second golangci-lint pin",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			dir := writeRepo(t, tt.files)
-			assertOneOrClean(t, checks.CheckLintPin(dir), checks.RuleLintPin, tt.wantMsg)
-		})
-	}
-}
-
 func TestRetiredFiles(t *testing.T) {
 	t.Parallel()
 

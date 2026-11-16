@@ -34,11 +34,6 @@ import (
 // same owner --fleet sweeps.
 const defaultOwner = fleetOwner
 
-// defaultLintPin is the golangci-lint version a fresh repo pins. It is a
-// starting value, not a contract: the lint-pin rule checks that exactly one
-// pin exists, never which version it names.
-const defaultLintPin = "v2.5.0"
-
 // defaultGoVersion is the go directive a fresh go.mod carries.
 const defaultGoVersion = "1.25"
 
@@ -58,7 +53,6 @@ type ScaffoldSpec struct {
 	Prefix  string         // bd issue prefix, 2-3 letters
 	PlanDir string         // bd custom.plan_dir
 	Profile values.Profile // tool | lib
-	LintPin string         // golangci-lint version for the single pin file
 	GoVer   string         // go.mod go directive
 }
 
@@ -82,9 +76,6 @@ func (s *ScaffoldSpec) applyDefaults() {
 	}
 	if s.PlanDir == "" {
 		s.PlanDir = "~/Projects/dk/Project/" + s.Repo + "/plans"
-	}
-	if s.LintPin == "" {
-		s.LintPin = defaultLintPin
 	}
 	if s.GoVer == "" {
 		s.GoVer = defaultGoVersion
@@ -330,7 +321,7 @@ func mkStepDoc(step string) string {
 	case "vet":
 		return "Run go vet"
 	case "lint":
-		return "Run golangci-lint (version pinned in " + pinFile + ")"
+		return "Run golangci-lint"
 	case "test":
 		return "Run tests with coverage"
 	case "build":
@@ -372,16 +363,10 @@ func renderPackFile(source string) func(ScaffoldSpec) string {
 	}
 }
 
-// renderProjectConf emits the one pin location checkLintPin reads. No other
-// emitted file may carry a golangci version literal — the same rule that
-// forbids it fleet-wide forbids it here.
+// renderProjectConf emits the repo's project.conf. It carries no golangci-lint
+// version: the linter runs at whatever release is installed.
 func renderProjectConf(spec ScaffoldSpec) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "# %s — the single fleet pin location. Nothing else may carry a\n", pinFile)
-	b.WriteString("# golangci-lint version literal; repo-standard's lint-pin rule enforces that.\n")
-	fmt.Fprintf(&b, "PROJECT_NAME=%s\n", spec.Repo)
-	fmt.Fprintf(&b, "GOLANGCI_LINT_VERSION=%s\n", spec.LintPin)
-	return b.String()
+	return fmt.Sprintf("PROJECT_NAME=%s\n", spec.Repo)
 }
 
 // renderCheckWorkflow emits CI that calls the make verb and re-implements
@@ -390,11 +375,11 @@ func renderProjectConf(spec ScaffoldSpec) string {
 // check context (checkCIDocsSkip). The ignore regex renders from
 // docsOnlyPaths, its one home.
 func renderCheckWorkflow(ScaffoldSpec) string {
-	return strings.NewReplacer("@DOCS@", renderDocsOnlyRegex(), "@PIN@", pinFile).Replace(checkWorkflowTmpl)
+	return strings.ReplaceAll(checkWorkflowTmpl, "@DOCS@", renderDocsOnlyRegex())
 }
 
-// checkWorkflowTmpl is renderCheckWorkflow's body; @DOCS@ and @PIN@ fill in
-// from their one homes.
+// checkWorkflowTmpl is renderCheckWorkflow's body; @DOCS@ fills in
+// from its one home.
 const checkWorkflowTmpl = `name: check
 
 # Always triggers — never paths/paths-ignore. A skipped workflow never reports
@@ -463,12 +448,11 @@ jobs:
           go-version-file: go.mod
           check-latest: false
 
-      - name: install linter (version pinned in @PIN@)
+      - name: install linter (latest release)
         if: needs.detect.outputs.run_check == 'true'
         run: |
-          . ./@PIN@
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
-            | sh -s -- -b "$(go env GOPATH)/bin" "$GOLANGCI_LINT_VERSION"
+            | sh -s -- -b "$(go env GOPATH)/bin"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       # CI runs the developer's gate. No step here duplicates what a make

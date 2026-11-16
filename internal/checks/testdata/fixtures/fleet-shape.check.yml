@@ -154,11 +154,9 @@ jobs:
           # under RUNNER_TEMP lets the version-keyed cache below skip the rebuild.
           echo "GOBIN=$RUNNER_TEMP/.gobin" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/.gobin" >> "$GITHUB_PATH"
-          # Tool versions: ONE pin location, .sandbox/project.conf (repo-standard
-          # lint-pin). Exported to env so the cache key and install step below
-          # read the same values — no literals in this file.
+          # Tool versions: .sandbox/project.conf. Exported to env so the cache key
+          # and install step below read the same values — no literals in this file.
           source .sandbox/project.conf
-          echo "GOLANGCI_LINT_VERSION=$GOLANGCI_LINT_VERSION" >> "$GITHUB_ENV"
           echo "FO_VERSION=$FO_VERSION" >> "$GITHUB_ENV"
 
       # Private-module access: github.com/dkoosis/keyring is a private repo, so
@@ -216,10 +214,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/.gobin
-          key: ${{ runner.os }}-gotools-glci${{ env.GOLANGCI_LINT_VERSION }}-fo${{ env.FO_VERSION }}
+          key: ${{ runner.os }}-gotools-fo${{ env.FO_VERSION }}
 
-      # Lint tools: versions come from .sandbox/project.conf (the ONE pin
-      # location, repo-standard lint-pin; fo is pinned, not @latest
+      # Lint tools: golangci-lint is the latest release; fo's version comes from
+      # .sandbox/project.conf (pinned, not @latest
       # — make check depends on `fo wrap diag`, released in v0.2.3). `go
       # install` builds them on whichever OS the matrix leg runs (no vendored
       # darwin binaries exist) into GOBIN (set above, already on PATH). Each
@@ -227,7 +225,7 @@ jobs:
       - name: install lint tools
         if: needs.detect.outputs.run_check == 'true'
         run: |
-          [ -x "$GOBIN/golangci-lint" ] || go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$GOLANGCI_LINT_VERSION"
+          [ -x "$GOBIN/golangci-lint" ] || go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"
           [ -x "$GOBIN/fo" ]            || go install "github.com/dkoosis/fo/cmd/fo@$FO_VERSION"
 
       # Single-module collapse: `make check` runs the full ./... gate

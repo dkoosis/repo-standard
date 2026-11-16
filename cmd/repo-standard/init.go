@@ -43,7 +43,6 @@ func parseInitFlags(args []string) (initFlags, error) {
 		prefix     = fs.String("prefix", "", "bd issue prefix, 2-3 letters (default: first three letters of <repo>)")
 		planDir    = fs.String("plan-dir", "", "bd custom.plan_dir")
 		profile    = fs.String("profile", string(values.ProfileTool), "repo-standard profile: tool | lib")
-		lintPin    = fs.String("lint-pin", "", "golangci-lint version for the single pin file")
 		filesOnly  = fs.Bool("files-only", false, "emit the skeleton and skip machine bootstrap entirely")
 		dryRun     = fs.Bool("dry-run", false, "print what would be written and run; change nothing")
 		withRemote = fs.Bool("with-remote", false, "ALSO run the GitHub steps (labels, merge policy, branch protection) against a real account")
@@ -79,7 +78,6 @@ flags:
 			Prefix:  *prefix,
 			PlanDir: *planDir,
 			Profile: values.Profile(*profile),
-			LintPin: *lintPin,
 		},
 		target:     *dir,
 		filesOnly:  *filesOnly,
