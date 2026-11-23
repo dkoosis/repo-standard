@@ -6,13 +6,13 @@ toolchain go1.27.4
 
 require (
 	github.com/quasilyte/go-ruleguard/dsl v0.3.23
-	golang.org/x/tools v0.52.0
+	golang.org/x/tools v0.53.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	golang.org/x/mod v0.42.0 // indirect
-	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/mod v0.43.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
 )
 
 // v0.1.0 and v0.1.1 were tagged at the cfm-1e1.3 (Surface 2) commit, before
