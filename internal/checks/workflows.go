@@ -23,6 +23,7 @@ type workflowJob struct {
 	Needs yaml.Node `yaml:"needs"` // a job name or a list of them
 	If    string    `yaml:"if"`
 	Steps []struct {
+		ID  string `yaml:"id"`
 		If  string `yaml:"if"`
 		Run string `yaml:"run"`
 	} `yaml:"steps"`
@@ -59,8 +60,10 @@ var docsOnlyMatch = regexp.MustCompile(`\$2\s*!~\s*/\((.*?)\)/`)
 
 // checkCIDocsSkip verifies check.yml skips the gate for a docs-only pull
 // request without dropping the required check context (ci-docs-skip): the
-// workflow always triggers, a detect job decides docs-only, and the make check
-// step waits on that job's output. An absent workflow is ci-gate's finding.
+// workflow always triggers, a detect step decides docs-only, and the make
+// check step waits on its output. The detect step is best the gate job's own
+// first step (one job bills one runner); a separate detect job the gate job
+// needs: also passes. An absent workflow is ci-gate's finding.
 func checkCIDocsSkip(dir string) []Finding {
 	const file = ciGateFile
 	wf, findings := loadWorkflow(dir, file, RuleCIDocsSkip, "", "")
@@ -95,7 +98,7 @@ func docsSkipFindings(wf *workflow, file string) []Finding {
 			findings = append(findings, Finding{
 				File:   file,
 				Rule:   RuleCIDocsSkip,
-				Msg:    fmt.Sprintf("job %q's make check step is not gated on a needs output (missing needs:, or an if that never names it) — no job decides docs-only before make check runs — a docs-only PR pays the full gate", job),
+				Msg:    fmt.Sprintf("job %q's make check step is not gated on a detect output (no step id or needs: that its if names) — no job decides docs-only before make check runs — a docs-only PR pays the full gate", job),
 				Repair: "mv " + file + " check.yml.old && repo-standard --fix, then port the old file's extra steps behind the detect guard",
 			})
 		}
@@ -144,12 +147,14 @@ func docsSkipFindings(wf *workflow, file string) []Finding {
 }
 
 // gateGuard pairs a gate job (one whose make check step is conditioned on a
-// needed job's output) with the detect job it names.
+// detect output) with the job that writes it: a needed job, or the gate job
+// itself when its own detect step decides.
 type gateGuard struct{ gateJob, detectJob string }
 
 // gateGuards names each (gate job, detect job) pair where a make check step
-// (or its job) waits on the named job's output — the job must both appear in
+// (or its job) waits on a detect output. A needed job must both appear in
 // needs: and be referenced by the if condition; either alone can never gate.
+// A step of the same job must carry an id the if condition names.
 func gateGuards(wf *workflow) []gateGuard {
 	var pairs []gateGuard
 	for name, job := range wf.Jobs {
@@ -157,15 +162,31 @@ func gateGuards(wf *workflow) []gateGuard {
 			if !strings.Contains(step.Run, "make check") {
 				continue
 			}
-			for _, need := range nodeStrings(&job.Needs) {
-				ref := "needs." + need + ".outputs."
-				if strings.Contains(step.If, ref) || strings.Contains(job.If, ref) {
-					pairs = append(pairs, gateGuard{name, need})
-				}
+			for _, src := range guardSources(name, job, step.If) {
+				pairs = append(pairs, gateGuard{name, src})
 			}
 		}
 	}
 	return pairs
+}
+
+// guardSources names each job a make check step's condition (stepIf, or its
+// job's) reads a detect output from: the job itself for a named step id, a
+// needed job for a needs output. name is job's own name.
+func guardSources(name string, job *workflowJob, stepIf string) []string {
+	var srcs []string
+	for _, s := range job.Steps {
+		if s.ID != "" && strings.Contains(stepIf, "steps."+s.ID+".outputs.") {
+			srcs = append(srcs, name)
+		}
+	}
+	for _, need := range nodeStrings(&job.Needs) {
+		ref := "needs." + need + ".outputs."
+		if strings.Contains(stepIf, ref) || strings.Contains(job.If, ref) {
+			srcs = append(srcs, need)
+		}
+	}
+	return srcs
 }
 
 // makeCheckJobs names every job carrying a `make check` step, gated or not —

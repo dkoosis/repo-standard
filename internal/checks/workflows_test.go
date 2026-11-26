@@ -136,6 +136,27 @@ jobs:
         run: make check
 `
 
+// oneJobYML is the scaffold's shape: the gate job's first steps decide
+// docs-only, so a docs-only PR bills one job, not two.
+const oneJobYML = `name: check
+on:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        run: |
+          run_check="$(git diff --name-status "$base" "$head" | awk -F'\t' '
+            $2 !~ /(\.md$|^docs\/|^\.beads\/|^\.claude\/|^\.gitignore$|^LICENSE$)/ { print "true"; exit }
+          ')"
+          echo "run_check=${run_check:-false}" >> "$GITHUB_OUTPUT"
+      - name: check
+        if: steps.detect.outputs.run_check == 'true'
+        run: make check
+`
+
 // hardcodedDetectYML (cfm-31t): a detect job that carries the canonical
 // docs-only regex but never wires its match result to the output it writes —
 // run_check is a fixed "false" literal, so a non-docs change can never flip
@@ -182,6 +203,20 @@ func TestCIDocsSkip(t *testing.T) {
 		{
 			name: "conforming: detect job guards make check",
 			yml:  goodCheckYML,
+		},
+		{
+			name: "conforming: the gate job's own detect step guards make check",
+			yml:  oneJobYML,
+		},
+		{
+			name:    "one job: make check names no detect step",
+			yml:     strings.Replace(oneJobYML, "if: steps.detect.outputs.run_check == 'true'", "if: always()", 1),
+			wantMsg: "no job decides docs-only",
+		},
+		{
+			name:    "one job: detect step widens the docs set",
+			yml:     strings.Replace(oneJobYML, canonical, `(\.md$|^scripts\/)`, 1),
+			wantMsg: "widens",
 		},
 		{
 			name: "fleet-shape check.yml",
@@ -310,8 +345,8 @@ func TestFix_WritesCheckWorkflowWithDetectJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Fix wrote no workflow: %v", err)
 	}
-	if !strings.Contains(string(body), "detect:") {
-		t.Errorf("written workflow carries no detect job:\n%s", body)
+	if !strings.Contains(string(body), "id: detect") {
+		t.Errorf("written workflow carries no detect step:\n%s", body)
 	}
 	if got := checks.CheckCIDocsSkip(dir); len(got) != 0 {
 		t.Errorf("the --fix workflow fails ci-docs-skip: %+v", got)
