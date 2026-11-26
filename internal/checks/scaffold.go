@@ -370,7 +370,7 @@ func renderProjectConf(spec ScaffoldSpec) string {
 }
 
 // renderCheckWorkflow emits CI that calls the make verb and re-implements
-// none of it — exactly what checkCIGate demands — behind a detect job that
+// none of it — exactly what checkCIGate demands — behind a detect step that
 // lets a docs-only pull request skip the gate while still reporting the
 // check context (checkCIDocsSkip). The ignore regex renders from
 // docsOnlyPaths, its one home.
@@ -384,8 +384,9 @@ const checkWorkflowTmpl = `name: check
 
 # Always triggers — never paths/paths-ignore. A skipped workflow never reports
 # the required check context, so a docs-only PR could not merge under branch
-# protection. The detect job decides docs-only; check skips its steps and
-# still reports green. Any changed path outside the docs set runs the full gate.
+# protection. The detect step decides docs-only; the later steps skip and the
+# job still reports green. Any changed path outside the docs set runs the full
+# gate. Detect is a step, not its own job: each job bills at least a minute.
 on:
   pull_request:
   push:
@@ -399,15 +400,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  detect:
+  check:
     runs-on: ubuntu-latest
-    outputs:
-      run_check: ${{ steps.diff.outputs.run_check }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - id: diff
+      - id: detect
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -430,26 +430,18 @@ jobs:
           ')"
           echo "run_check=${run_check:-false}" >> "$GITHUB_OUTPUT"
 
-  check:
-    needs: detect
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
       - name: docs-only — skip the gate
-        if: needs.detect.outputs.run_check != 'true'
+        if: steps.detect.outputs.run_check != 'true'
         run: echo "Only docs changed — reporting check without running the gate."
 
-      - uses: actions/checkout@v4
-        if: needs.detect.outputs.run_check == 'true'
-
       - uses: actions/setup-go@v5
-        if: needs.detect.outputs.run_check == 'true'
+        if: steps.detect.outputs.run_check == 'true'
         with:
           go-version-file: go.mod
           check-latest: false
 
       - name: install linter (latest release)
-        if: needs.detect.outputs.run_check == 'true'
+        if: steps.detect.outputs.run_check == 'true'
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
             | sh -s -- -b "$(go env GOPATH)/bin"
@@ -458,7 +450,7 @@ jobs:
       # CI runs the developer's gate. No step here duplicates what a make
       # target already owns — that split is what the ci-gate rule protects.
       - name: check
-        if: needs.detect.outputs.run_check == 'true'
+        if: steps.detect.outputs.run_check == 'true'
         run: make check
 `
 

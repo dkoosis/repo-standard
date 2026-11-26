@@ -127,7 +127,7 @@ func fixReadme(dir string) (string, error) {
 }
 
 // fixCheckWorkflow writes .github/workflows/check.yml when the repo has none:
-// make check behind the docs-only detect job, the shape ci-gate and
+// make check behind the docs-only detect step, the shape ci-gate and
 // ci-docs-skip read. An existing workflow is never touched — its extra steps
 // are a person's to port.
 //
@@ -148,7 +148,7 @@ func fixCheckWorkflow(dir string) (string, error) {
 	if err := os.WriteFile(path, []byte(renderCheckWorkflow(ScaffoldSpec{})), 0o600); err != nil {
 		return "", fmt.Errorf("write %s: %w", ciGateFile, err)
 	}
-	return fmt.Sprintf("created %s — make check behind the docs-only detect job", ciGateFile), nil
+	return fmt.Sprintf("created %s — make check behind the docs-only detect step", ciGateFile), nil
 }
 
 // repoName is the last element of the module path in dir's go.mod, falling

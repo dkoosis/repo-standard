@@ -54,7 +54,7 @@ const (
 	RuleRootMinimal     = "root-minimal"         // no ROADMAP.md / repo-standard.json / NORTH_STAR.md / kg at the root
 	RuleSandboxLib      = "sandbox-lib"          // .sandbox/lib matches the canonical copy repo-standard ships
 	RuleAgentsBlock     = "agents-managed-block" // root AGENTS.md carries no block a tool wrote
-	RuleCIDocsSkip      = "ci-docs-skip"         // a detect job lets a docs-only PR skip make check, context kept
+	RuleCIDocsSkip      = "ci-docs-skip"         // a detect step lets a docs-only PR skip make check, context kept
 	RuleGateSkip        = "gate-skip"            // a check or audit step exits 0 when its tool is missing
 	RuleToolPin         = "tool-pin"             // a gate tool runs on PATH, at @latest, or at an unset version
 	RuleFuzzCoverage    = "fuzz-coverage"        // a Fuzz function the fuzz target does not run
