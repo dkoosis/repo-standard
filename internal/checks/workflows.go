@@ -76,7 +76,7 @@ func checkCIDocsSkip(dir string) []Finding {
 			File:   file,
 			Rule:   RuleCIDocsSkip,
 			Msg:    fmt.Sprintf("on.%s carries a workflow-level path filter — a skipped workflow never reports the required check context, so a docs-only PR cannot merge", event),
-			Repair: "delete the paths/paths-ignore key; decide docs-only in a detect job instead (see `repo-standard --fix` on a repo with no check.yml for the shape)",
+			Repair: "delete the paths/paths-ignore key; decide docs-only in a detect step instead (see `repo-standard --fix` on a repo with no check.yml for the shape)",
 		})
 	}
 
