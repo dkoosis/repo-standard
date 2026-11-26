@@ -227,6 +227,12 @@ func TestCIDocsSkip(t *testing.T) {
 			wantMsg: "no job decides docs-only",
 		},
 		{
+			name: "one job: the docs regex sits in a step after make check",
+			yml: strings.Replace(strings.Replace(oneJobAfterYML, "      - id: detect\n", "      - id: late\n", 1),
+				gateStep, "      - id: detect\n        run: echo \"run_check=${FORCE:-false}\" >> \"$GITHUB_OUTPUT\"\n"+gateStep, 1),
+			wantMsg: "no docs-only regex",
+		},
+		{
 			name:    "one job: detect step widens the docs set",
 			yml:     strings.Replace(oneJobYML, canonical, `(\.md$|^scripts\/)`, 1),
 			wantMsg: "widens",

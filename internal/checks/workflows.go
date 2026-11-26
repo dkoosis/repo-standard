@@ -113,7 +113,7 @@ func docsSkipFindings(wf *workflow, file string) []Finding {
 		}
 		seen[g.detectJob] = true
 
-		detectJob := wf.Jobs[g.detectJob]
+		detectJob := g.detect
 		alts := detectSets(detectJob)
 		if len(alts) == 0 {
 			findings = append(findings, Finding{
@@ -147,9 +147,13 @@ func docsSkipFindings(wf *workflow, file string) []Finding {
 }
 
 // gateGuard pairs a gate job (one whose make check step is conditioned on a
-// detect output) with the job that writes it: a needed job, or the gate job
-// itself when its own detect step decides.
-type gateGuard struct{ gateJob, detectJob string }
+// detect output) with what writes it: a needed job, or the gate job's own
+// earlier step. detectJob names it in findings; detect holds the steps read
+// for the docs regex and the run_check output (the one step, for a step).
+type gateGuard struct {
+	gateJob, detectJob string
+	detect             *workflowJob
+}
 
 // gateGuards names each (gate job, detect job) pair where a make check step
 // (or its job) waits on a detect output. A needed job must both appear in
@@ -162,33 +166,32 @@ func gateGuards(wf *workflow) []gateGuard {
 			if !strings.Contains(step.Run, "make check") {
 				continue
 			}
-			for _, src := range guardSources(name, job, i) {
-				pairs = append(pairs, gateGuard{name, src})
-			}
+			pairs = append(pairs, guardSources(wf, name, job, i)...)
 		}
 	}
 	return pairs
 }
 
-// guardSources names each job the condition of job's make check step (step
-// index at, or the job's own if) reads a detect output from: the job itself
-// for the id of an earlier step (a later step's output is still empty when
-// the condition runs), a needed job for a needs output. name is job's own name.
-func guardSources(name string, job *workflowJob, at int) []string {
+// guardSources returns a guard for each detect output the condition of job's
+// make check step (step index at, or the job's own if) reads: an earlier step
+// of the job by its id (a later step's output is still empty when the
+// condition runs), or a needed job. name is job's own name.
+func guardSources(wf *workflow, name string, job *workflowJob, at int) []gateGuard {
 	stepIf := job.Steps[at].If
-	var srcs []string
+	var guards []gateGuard
 	for _, s := range job.Steps[:at] {
 		if s.ID != "" && strings.Contains(stepIf, "steps."+s.ID+".outputs.") {
-			srcs = append(srcs, name)
+			step := &workflowJob{Steps: append(job.Steps[:0:0], s)}
+			guards = append(guards, gateGuard{name, name + "." + s.ID, step})
 		}
 	}
 	for _, need := range nodeStrings(&job.Needs) {
 		ref := "needs." + need + ".outputs."
 		if strings.Contains(stepIf, ref) || strings.Contains(job.If, ref) {
-			srcs = append(srcs, need)
+			guards = append(guards, gateGuard{name, need, wf.Jobs[need]})
 		}
 	}
-	return srcs
+	return guards
 }
 
 // makeCheckJobs names every job carrying a `make check` step, gated or not —
