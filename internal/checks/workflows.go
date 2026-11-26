@@ -158,11 +158,11 @@ type gateGuard struct{ gateJob, detectJob string }
 func gateGuards(wf *workflow) []gateGuard {
 	var pairs []gateGuard
 	for name, job := range wf.Jobs {
-		for _, step := range job.Steps {
+		for i, step := range job.Steps {
 			if !strings.Contains(step.Run, "make check") {
 				continue
 			}
-			for _, src := range guardSources(name, job, step.If) {
+			for _, src := range guardSources(name, job, i) {
 				pairs = append(pairs, gateGuard{name, src})
 			}
 		}
@@ -170,12 +170,14 @@ func gateGuards(wf *workflow) []gateGuard {
 	return pairs
 }
 
-// guardSources names each job a make check step's condition (stepIf, or its
-// job's) reads a detect output from: the job itself for a named step id, a
-// needed job for a needs output. name is job's own name.
-func guardSources(name string, job *workflowJob, stepIf string) []string {
+// guardSources names each job the condition of job's make check step (step
+// index at, or the job's own if) reads a detect output from: the job itself
+// for the id of an earlier step (a later step's output is still empty when
+// the condition runs), a needed job for a needs output. name is job's own name.
+func guardSources(name string, job *workflowJob, at int) []string {
+	stepIf := job.Steps[at].If
 	var srcs []string
-	for _, s := range job.Steps {
+	for _, s := range job.Steps[:at] {
 		if s.ID != "" && strings.Contains(stepIf, "steps."+s.ID+".outputs.") {
 			srcs = append(srcs, name)
 		}

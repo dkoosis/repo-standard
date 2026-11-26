@@ -157,6 +157,14 @@ jobs:
         run: make check
 `
 
+// oneJobAfterYML moves oneJobYML's detect step below make check, whose
+// condition then reads an output not yet written: make check never runs.
+var oneJobAfterYML = strings.Replace(
+	strings.Replace(oneJobYML, gateStep, "", 1),
+	"      - id: detect\n", gateStep+"      - id: detect\n", 1)
+
+const gateStep = "      - name: check\n        if: steps.detect.outputs.run_check == 'true'\n        run: make check\n"
+
 // hardcodedDetectYML (cfm-31t): a detect job that carries the canonical
 // docs-only regex but never wires its match result to the output it writes —
 // run_check is a fixed "false" literal, so a non-docs change can never flip
@@ -211,6 +219,11 @@ func TestCIDocsSkip(t *testing.T) {
 		{
 			name:    "one job: make check names no detect step",
 			yml:     strings.Replace(oneJobYML, "if: steps.detect.outputs.run_check == 'true'", "if: always()", 1),
+			wantMsg: "no job decides docs-only",
+		},
+		{
+			name:    "one job: the detect step comes after make check",
+			yml:     oneJobAfterYML,
 			wantMsg: "no job decides docs-only",
 		},
 		{
