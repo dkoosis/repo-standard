@@ -176,16 +176,16 @@ jobs:
           full=true
           last=""
           if [ "$EVENT" = schedule ]; then
-            last=$(gh api "repos/${{ github.repository }}/actions/workflows/audit.yml/runs?branch=main&status=success&per_page=1" \
+            last=$(gh api "repos/${{ github.repository }}/actions/workflows/audit.yml/runs?branch=main&event=schedule&status=success&per_page=1" \
               --jq '.workflow_runs[0].head_sha // ""') || last=""
           fi
           if [ "$EVENT" != schedule ]; then
             why="$EVENT: full audit"
           elif [ -n "$last" ] && [ "$last" = "$GITHUB_SHA" ]; then
             full=false
-            why="schedule: main unchanged since last green run ($last); vuln only"
+            why="schedule: main unchanged since last green scheduled run ($last); vuln only"
           else
-            why="schedule: main changed since last green run (${last:-none}); full audit"
+            why="schedule: main changed since last green scheduled run (${last:-none}); full audit"
           fi
           echo "audit path: $why"
           echo "full=$full" >> "$GITHUB_OUTPUT"
