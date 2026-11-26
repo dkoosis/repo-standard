@@ -129,7 +129,7 @@ func docsSkipFindings(wf *workflow, file string) []Finding {
 				findings = append(findings, Finding{
 					File:   file,
 					Rule:   RuleCIDocsSkip,
-					Msg:    fmt.Sprintf("detect job %q widens the docs-only set with %q — a repo may narrow repo-standard's set, never widen it", g.detectJob, alt),
+					Msg:    fmt.Sprintf("detect %q widens the docs-only set with %q — a repo may narrow repo-standard's set, never widen it", g.detectJob, alt),
 					Repair: fmt.Sprintf("remove %q from the job's awk regex; repo-standard's set is %s", alt, renderDocsOnlyRegex()),
 				})
 			}
@@ -138,7 +138,7 @@ func docsSkipFindings(wf *workflow, file string) []Finding {
 			findings = append(findings, Finding{
 				File:   file,
 				Rule:   RuleCIDocsSkip,
-				Msg:    fmt.Sprintf("detect job %q's run_check output is a fixed value that never varies with the diff — a non-docs change can never flip it true, so make check never runs", g.detectJob),
+				Msg:    fmt.Sprintf("detect %q's run_check output is a fixed value that never varies with the diff — a non-docs change can never flip it true, so make check never runs", g.detectJob),
 				Repair: `write run_check from the match's own result (for example run_check="$(... | awk ...)"; echo "run_check=${run_check:-false}"), not a literal`,
 			})
 		}
